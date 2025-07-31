@@ -1,0 +1,109 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  background: linear-gradient(60deg, var(--primary), var(--primary), var(--primary-soft), var(--primary-soft));
+  color: var(--text-primary);
+  place-items: center;
+  transition:
+    color 0.5s;
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  display: flex;
+  justify-content: center;
+  max-width: 1280px;
+  width: 100%;
+  min-height: 100vh;
+  font-weight: normal;
+  padding: 1rem;
+}
+
+a {
+  	text-decoration: none;
+	color: var(--text-link);
+	text-decoration: none;
+	font-weight: 600;
+}
+
+h1{
+  font-size: 2rem;
+  color: var(--text-secondary);
+}
+
+.btn {
+  cursor: pointer;
+}
+
+/* === FORM STYLES === */
+.form-group {
+	margin-bottom: var(--spacing-5);
+}
+
+.form-input {
+	width: 100%;
+	padding: var(--spacing-3) var(--spacing-4);
+	border: 2px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	background: var(--bg-input);
+	transition: all var(--duration-fast) ease;
+}
+
+.form-input::placeholder{
+	font-size: .95rem;
+	font-weight: 500;
+}
+
+.form-input:focus {
+	outline:none;
+	border-color: var(--primary);
+}
+
+.form-button {
+	padding: var(--spacing-3);
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: var(--text-secondary);
+	border: none;
+	border-radius: var(--radius-lg);
+	position: relative;
+	transition: all var(--duration-fast) ease;
+}
+
+.form-button:hover:not(:disabled) {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 25px rgba(102, 126, 234, .3);
+}
+
+.form-button:disabled {
+	opacity: .7;
+	cursor: not-allowed;
+	transform: none;
+}
+
+.form-button span {
+	font-size: 1rem;
+	font-weight: 600;
+}
