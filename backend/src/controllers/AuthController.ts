@@ -1,7 +1,18 @@
 import type { Context } from 'hono'
 import { User } from '../models/User.js';
 import argon2 from 'argon2';
-import { type RegisterPayload } from '../validations/authValidation.js';
+import { decode, sign, verify} from 'hono/jwt';
+import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { type RegisterPayload, type LoginPayload } from '../validations/authValidation.js';
+import {Redis} from 'ioredis';
+import crypto from 'crypto';
+
+const redis = new Redis({
+   host: "127.0.0.1",
+   port: 6379
+})
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here'; // Ensure you set this in your environment variables
 
 /**
  * AuthController - handles user authentication operations
@@ -44,5 +55,97 @@ export class AuthController {
          : 'Une erreur est survenue lors de l\'enregistrement' }, 
          500);
       }
+   };
+
+   static async login(c: Context) {
+      try {
+         // @ts-ignore - The zValidator middleware manages validation
+         const payload: LoginPayload = c.req.valid('json');
+
+         const errorStatus = c.json({ message: 'Email ou mot de passe incorrect' }, 401); // Unauthorized
+
+         const user = await User.query().where('email', payload.email).first();
+         if (!user) { return errorStatus;}
+
+         const isValidPassword = await argon2.verify(user.password, payload.password);
+         if (!isValidPassword) { return errorStatus;}
+
+         // Generate JWT token
+         const sessionId = crypto.randomUUID();
+         const accessTokens = await sign({sub : user.id, exp: 1 * 60}, JWT_SECRET)
+         const refreshToken = crypto.randomBytes(32).toString('hex')
+         const csrfToken = crypto.randomBytes(16).toString('hex')
+
+         setCookie(c, 'accessToken', accessTokens,{
+            httpOnly:true,
+            secure: true,
+            sameSite: 'Strict',
+            maxAge: 1 * 60
+         })
+
+         setCookie(c, 'refreshToken', refreshToken,{
+            httpOnly:true,
+            secure: true,
+            sameSite: 'Strict',
+            maxAge: 30 * 24 * 60 * 60
+         })
+
+         setCookie(c, 'sessionId', sessionId, {
+            httpOnly:true,
+            secure: true,
+            sameSite: 'strict'
+         })
+
+         const sessionData = {
+            userId: user.id,
+            username: user.username,
+            email: user.email,
+            refreshToken,
+            csrfToken,
+            loginTime: new Date().toISOString(),
+            lastActivity: new Date().toISOString,
+            device: c.req.header('user-agent'),
+         }
+
+         await redis.setex(`session:${sessionId}`, 4 * 3600, JSON.stringify(sessionData))
+
+         return c.json({
+            message: 'User logged in successfully',
+            data: {
+               id: user.id,
+               username: user.username,
+               email: user.email,
+            },
+            isAuthenticated: true,
+            csrfToken: csrfToken
+         }, 200);
+
+
+      } catch (error) {
+         console.log(error)
+         return c.json({ 
+            message: 'Login failed', 
+            error: process.env.NODE_ENV === 'development' 
+         ? error instanceof Error ? error.message : 'Erreur inconnue'
+         : 'Une erreur est survenue lors de l\'enregistrement' }, 
+         500);
+      }
+   };
+
+   static async logout(c: Context) {
+      const sessionId = getCookie(c, 'sessionId')
+
+      if(sessionId) {
+         await redis.del(`session:${sessionId}`);
+      }
+
+      deleteCookie(c, 'sessionId')
+      deleteCookie(c, 'accessToken')
+      deleteCookie(c, 'refreshToken')
+
+      return c.json({
+         success: true,
+         message: 'Logged out successfully'
+      })
    }
 }

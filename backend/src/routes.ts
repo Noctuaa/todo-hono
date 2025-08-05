@@ -19,8 +19,8 @@ import { registerSchema, loginSchema } from './validations/authValidation.js';
 // Define routes for authentication
 const authRouter = new Hono()
    .post('/register', zValidator('json', registerSchema), AuthController.register)
-   .post('/login', zValidator('json', loginSchema))
-   .post('/logout');
+   .post('/login', zValidator('json',loginSchema), AuthController.login)
+   .post('/logout', AuthController.logout);
    
 
 
