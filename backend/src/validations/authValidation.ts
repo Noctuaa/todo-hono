@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const registerSchema = z.strictObject({
+export const registerSchema = z.object({
    username: z.string()
    .min(5, 'Le nom d\'utilisateur doit contenir au moins 5 caractères')
    .max(255, 'Le nom d\'utilisateur ne peut pas dépasser 255 caractères')
@@ -15,9 +15,13 @@ export const registerSchema = z.strictObject({
            'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre')
 })
 
+export type RegisterPayload = z.infer<typeof registerSchema>;
+
 export const loginSchema = z.object({
    email: z.email(`Format d'email invalide`),
    password: z.string()
    .min(8, `Le mot de passe doit  contenir au moins 8 caractères`)
    .max(255, `Le mot de passe ne peut pas dépasser 255 caractères`)
 })
+
+export type LoginPayload = z.infer<typeof loginSchema>;
