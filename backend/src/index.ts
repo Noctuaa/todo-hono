@@ -1,18 +1,13 @@
 import 'dotenv/config'
 import './config/database.js'
 import { serve } from '@hono/node-server'
-import { Hono } from 'hono'
+import routes from './routes.js'
 
-const app = new Hono()
-
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
 
 const port = process.env.PORT || 3000
 
 serve({
-  fetch: app.fetch,
+  fetch: routes.fetch,
   port: Number(port)
 }, (info) => {
   console.log(`Server is running on http://localhost:${port}`)
