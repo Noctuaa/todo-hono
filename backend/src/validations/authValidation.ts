@@ -13,15 +13,13 @@ export const registerSchema = z.object({
    .max(255, `Le mot de passe ne peut pas dépasser 255 caractères`)
    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
            'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre')
-})
+});
 
 export type RegisterPayload = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
    email: z.email(`Format d'email invalide`),
-   password: z.string()
-   .min(8, `Le mot de passe doit  contenir au moins 8 caractères`)
-   .max(255, `Le mot de passe ne peut pas dépasser 255 caractères`)
-})
+   password: z.string().min(1, 'Mot de passe requis')
+});
 
 export type LoginPayload = z.infer<typeof loginSchema>;
