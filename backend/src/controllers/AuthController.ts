@@ -8,11 +8,12 @@ import {Redis} from 'ioredis';
 import crypto from 'crypto';
 
 const redis = new Redis({
-   host: "127.0.0.1",
-   port: 6379
+   host: process.env.REDIS_HOST || 'localhost',
+   port: parseInt(process.env.REDIS_PORT || '6379'),
+   password: ''
 })
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here'; // Ensure you set this in your environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
 
 /**
  * AuthController - handles user authentication operations
@@ -72,7 +73,7 @@ export class AuthController {
 
          // Generate JWT token
          const sessionId = crypto.randomUUID();
-         const accessTokens = await sign({sub : user.id, exp: 1 * 60}, JWT_SECRET)
+         const accessTokens = await sign({sub : user.id, exp: Math.floor(Date.now() / 1000) + 60 * 5}, JWT_SECRET)
          const refreshToken = crypto.randomBytes(32).toString('hex')
          const csrfToken = crypto.randomBytes(16).toString('hex')
 
@@ -80,7 +81,7 @@ export class AuthController {
             httpOnly:true,
             secure: true,
             sameSite: 'Strict',
-            maxAge: 1 * 60
+            maxAge: 15 * 60
          })
 
          setCookie(c, 'refreshToken', refreshToken,{
@@ -134,7 +135,6 @@ export class AuthController {
 
    static async logout(c: Context) {
       const sessionId = getCookie(c, 'sessionId')
-
       if(sessionId) {
          await redis.del(`session:${sessionId}`);
       }
@@ -146,6 +146,30 @@ export class AuthController {
       return c.json({
          success: true,
          message: 'Logged out successfully'
+      })
+   };
+
+   static async status(c:Context) {
+      const user = c.get('user')
+      const sessionId = getCookie(c, 'sessionId')
+      
+      if (sessionId) {
+         const sessionData = await redis.get(`session:${sessionId}`)
+         if (sessionData) {
+            const session = JSON.parse(sessionData)
+            session.lastActivity = new Date().toISOString()
+            await redis.setex(`session:${sessionId}`, 4 * 3600, JSON.stringify(session))
+         }
+      }
+      
+      return c.json({
+         authenticated: true,
+         user: {
+            id: user.userId,
+            username: user.username,
+            email: user.email
+         },
+         csrfToken: user.csrfToken
       })
    }
 }
