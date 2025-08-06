@@ -9,6 +9,9 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { zValidator } from '@hono/zod-validator'
 
+// Import middleware
+import { authMiddleware } from './middleware/authMiddleware.js';
+
 // Import controllers
 import { AuthController } from './controllers/AuthController.js'
 
@@ -18,9 +21,10 @@ import { registerSchema, loginSchema } from './validations/authValidation.js';
 
 // Define routes for authentication
 const authRouter = new Hono()
+   .get('/status', authMiddleware, AuthController.status)
    .post('/register', zValidator('json', registerSchema), AuthController.register)
    .post('/login', zValidator('json',loginSchema), AuthController.login)
-   .post('/logout', AuthController.logout);
+   .post('/logout', authMiddleware, AuthController.logout);
    
 
 
