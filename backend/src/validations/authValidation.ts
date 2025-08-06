@@ -19,7 +19,8 @@ export type RegisterPayload = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
    email: z.email(`Format d'email invalide`),
-   password: z.string().min(1, 'Mot de passe requis')
+   password: z.string().min(1, 'Mot de passe requis'),
+   rememberMe: z.boolean().default(false)
 });
 
 export type LoginPayload = z.infer<typeof loginSchema>;
