@@ -46,23 +46,23 @@ export class RedisService {
     await redis.setex(`session:${sessionId}`, expiry, JSON.stringify(sessionData))
   }
 
- /**
+  /**
+   * Retrieve session data from Redis
+   * @param {string} sessionId - Session identifier
+   * @returns {Promise<SessionData | null>} Session data or null if not found
+   */
+  static async getSession(sessionId: string): Promise<SessionData | null> {
+    const data = await redis.get(`session:${sessionId}`);
+    return data ? JSON.parse(data) : null;
+  }
+
+  /**
    * Delete session from Redis
    * @param {string} sessionId - Session identifier
    * @returns {Promise<void>}
    */
   static async deleteSession(sessionId: string): Promise<void> {
     await redis.del(`session:${sessionId}`);
-  }
-
-  /**
-   * Check if session exists
-   * @param {string} sessionId - Session identifier
-   * @returns {Promise<boolean>} True if session exists
-   */
-  static async sessionExists(sessionId: string): Promise<boolean> {
-    const exists = await redis.exists(`session:${sessionId}`);
-    return exists === 1;
   }
 
   /**
