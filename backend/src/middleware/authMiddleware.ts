@@ -1,43 +1,47 @@
 import type { Context } from 'hono';
-import { getCookie, setCookie } from 'hono/cookie';
+import { getCookie } from 'hono/cookie';
 import { setAccessToken, setRefreshToken, clearAuthCookies } from '../services/cookieService.js';
 import {sign, verify} from 'hono/jwt';
-import {Redis} from 'ioredis';
+import { RedisService } from '../services/redisService.js';
 import crypto from 'crypto';
 
-const redis = new Redis({
-   host: process.env.REDIS_HOST || 'localhost',
-   port: parseInt(process.env.REDIS_PORT || '6379'),
-   password: ''
-})
 
 const JWT_SECRET = process.env.JWT_SECRET || 'localhost';
 
+/**
+ * Authentication middleware for protected routes
+ * Validates JWT access tokens and handles automatic refresh using Redis sessions
+ * Supports token rotation for enhanced security
+ * 
+ * @param {Context} c - Hono context object
+ * @param {Function} next - Next middleware function
+ * @returns {Promise<void>} Continues to next middleware or returns 401
+ * @throws {401} If authentication fails at any step
+ */
 export const authMiddleware = async (c: Context, next: () => Promise<void>) => {
    const sessionId = getCookie(c, 'app_id')
    const accessToken = getCookie(c, 'auth_session')
    const refreshToken = getCookie(c, 'usr_token')
 
-   // === If there is no sessionId, nothing can be done ===
+   // Check for session ID - required for any authentication
    if(!sessionId){
       clearAuthCookies(c)
       return c.json({error: 'Authtenication required'}, 401);
    }
 
-   // === Redis session recovery ===
-   const sessionData = await redis.get(`session:${sessionId}`)
+   // Validate session exists in Redis
+   const sessionData = await RedisService.getSession(sessionId)
    if(!sessionData){
       clearAuthCookies(c)
       return c.json({ error: 'Session expired' }, 401)
    }
 
-   const session = JSON.parse(sessionData)
 
-   // === Verification of access token ===
+   // Try to authenticate with access token JWT
    if(accessToken) {
       try {
          const payload = await verify(accessToken, JWT_SECRET)
-         c.set('user', {...payload, ...JSON.parse(sessionData) })
+         c.set('user', {...payload, ...sessionData})
          console.log('Access token valide')
          return await next()
       } catch (error) {
@@ -45,28 +49,29 @@ export const authMiddleware = async (c: Context, next: () => Promise<void>) => {
       }
    }
 
-   // === Attempting to refresh with the refresh token ===
-   if(refreshToken && session.refreshToken === refreshToken){
-      try {
-         // === Generate a new access token ===
-         const newAccessToken = await sign({sub : session.userId, exp: Math.floor(Date.now() / 1000) + 60 * 5}, JWT_SECRET);
 
-         // === Refresh token rotation (security) ===
+   // Access token expired - attempt refresh with refresh token
+   if(sessionData.refreshToken === refreshToken){
+      try {
+         // Generate new access token
+         const newAccessToken = await sign({sub : sessionData.userId, exp: Math.floor(Date.now() / 1000) + 60 * 5}, JWT_SECRET);
+
+         // Rotate refresh token for security
          const newRefreshToken = crypto.randomBytes(32).toString('hex')
 
-         // === Update session ===
-         session.refreshToken = newRefreshToken
-         session.lastRefresh = new Date().toISOString()
+         // Update session with new refresh token
+         sessionData.refreshToken = newRefreshToken
+         sessionData.lastRefresh = new Date().toISOString()
 
-         // === Persistence in Redis ===
-         await redis.setex(`session:${sessionId}`, 14400, JSON.stringify(session))
+         // Persist updated session in Redis
+         await RedisService.setSession(sessionId, sessionData, sessionData.rememberMe)
 
-         // ==== Update new cookies ===
+         // Set new cookies with updated tokens
          setAccessToken(c, newAccessToken);
-         setRefreshToken(c, newRefreshToken, session.rememberMe);
+         setRefreshToken(c, newRefreshToken, sessionData.rememberMe);
 
-         // === Injecting the user into the context ===
-         c.set('user', session)
+         // Inject user session data into context
+         c.set('user', sessionData)
          console.log('🔄 Access token renouvelé')
          return await next()
       } catch (error) {
@@ -75,6 +80,7 @@ export const authMiddleware = async (c: Context, next: () => Promise<void>) => {
       }
    }
 
+   await RedisService.deleteSession(sessionId);
    clearAuthCookies(c)
    console.log('No means of authenticating the user')
    return c.json({ error: 'Authentication required' }, 401)

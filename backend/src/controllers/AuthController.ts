@@ -1,28 +1,30 @@
 import type { Context } from 'hono'
 import { User } from '../models/User.js';
 import argon2 from 'argon2';
-import { decode, sign, verify} from 'hono/jwt';
+import { sign } from 'hono/jwt';
 import { COOKIE_NAMES, setAccessToken, setRefreshToken, setAppSessionId, clearAuthCookies} from '../services/cookieService.js';
- import { getCookie, deleteCookie } from 'hono/cookie';
+import { getCookie } from 'hono/cookie';
 import { type RegisterPayload, type LoginPayload } from '../validations/authValidation.js';
-import {Redis} from 'ioredis';
+import { RedisService } from '../services/redisService.js';
 import crypto from 'crypto';
-
-const redis = new Redis({
-   host: process.env.REDIS_HOST || 'localhost',
-   port: parseInt(process.env.REDIS_PORT || '6379'),
-   password: ''
-})
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development-only';
 
 /**
  * AuthController - handles user authentication operations
- * This includes user registration, login, and logout.
+ * Manages user registration, login, logout, and session status
+ * Uses JWT tokens with Redis session storage for enhanced security
  */
 export class AuthController {
 
-   static async register(c: Context) {
+   /**
+    * Register a new user account
+    * @param {Context} c - Hono context object
+    * @returns {Promise<Response>} JSON response with user data or error
+    * @throws {400} If user already exists
+    * @throws {500} If registration fails
+    */
+   static async register(c: Context): Promise<Response> {
       try {
          // @ts-ignore - The zValidator middleware manages validation
          const payload: RegisterPayload = c.req.valid('json');
@@ -59,7 +61,15 @@ export class AuthController {
       }
    };
 
-   static async login(c: Context) {
+   /**
+    * Authenticate user and create session
+    * Generates JWT access token, refresh token, and stores session in Redis
+    * @param {Context} c - Hono context object
+    * @returns {Promise<Response>} JSON response with user data and CSRF token
+    * @throws {401} If credentials are invalid
+    * @throws {500} If login process fails
+    */
+   static async login(c: Context): Promise<Response> {
       try {
          // @ts-ignore - The zValidator middleware manages validation
          const payload: LoginPayload = c.req.valid('json');
@@ -98,7 +108,7 @@ export class AuthController {
             device: c.req.header('user-agent'),
          }
 
-         await redis.setex(`session:${sessionId}`, 4 * 3600, JSON.stringify(sessionData))
+         await RedisService.setSession(sessionId, sessionData, rememberMe)
 
          return c.json({
             message: 'User logged in successfully',
@@ -124,12 +134,17 @@ export class AuthController {
       }
    };
 
-   static async logout(c: Context) {
-
+   /**
+    * Logout user and cleanup session
+    * Removes session from Redis and clears authentication cookies
+    * @param {Context} c - Hono context object
+    * @returns {Promise<Response>} JSON success response
+    */
+   static async logout(c: Context): Promise<Response> {
       const sessionId = getCookie(c, COOKIE_NAMES.APP_ID)
 
       if(sessionId) {
-         await redis.del(`session:${sessionId}`);
+         await RedisService.deleteSession(sessionId);
       }
 
       clearAuthCookies(c);
@@ -140,26 +155,17 @@ export class AuthController {
       })
    };
 
-   static async status(c:Context) {
+   /**
+    * Get current user authentication status
+    * Updates session activity timestamp and returns user information
+    * @param {Context} c - Hono context object (user must be authenticated)
+    * @returns {Promise<Response>} JSON response with user data and CSRF token
+    */
+   static async status(c:Context): Promise<Response> {
       const user = c.get('user')
-      const sessionId = getCookie(c, 'sessionId')
-      
-      if (sessionId) {
-         const sessionData = await redis.get(`session:${sessionId}`)
-         if (sessionData) {
-            const session = JSON.parse(sessionData)
-            session.lastActivity = new Date().toISOString()
-            await redis.setex(`session:${sessionId}`, 4 * 3600, JSON.stringify(session))
-         }
-      }
-      
+
       return c.json({
          authenticated: true,
-         user: {
-            id: user.userId,
-            username: user.username,
-            email: user.email
-         },
          csrfToken: user.csrfToken
       })
    }
