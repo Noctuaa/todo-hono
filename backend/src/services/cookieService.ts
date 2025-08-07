@@ -2,10 +2,10 @@ import type { Context } from 'hono'
 import { setCookie, deleteCookie } from 'hono/cookie'
 
 /**
- * Cookie Name
- * - AUTH_SESSION = Access
- * - USR_TOKEN = Refresh
- * - APP_ID = Session
+ * Authentication cookie names and their purposes
+ * - AUTH_SESSION: JWT access token (short-lived, 5-15 minutes)
+ * - USR_TOKEN: Refresh token (long-lived, days/weeks)
+ * - APP_ID: Session identifier for Redis lookup
  */
 export const COOKIE_NAMES = {
   AUTH_SESSION: 'auth_session', // Access
@@ -14,7 +14,12 @@ export const COOKIE_NAMES = {
 } as const
 
 
-// === Default options for all authentication cookies ===
+/**
+ * Default security options applied to all authentication cookies
+ * - httpOnly: Prevents XSS attacks by blocking JavaScript access
+ * - secure: HTTPS only in production
+ * - sameSite: Prevents CSRF attacks
+ */
 const DEFAULT_OPTIONS = {
    httpOnly: true,
    secure: process.env.NODE_ENV === 'production',
@@ -22,10 +27,10 @@ const DEFAULT_OPTIONS = {
 }
 
 /**
- * Sets the cookie containing the access token.
- * This cookie contains the JWT short-duration access token.
- * @param c - Hono Context
- * @param token - The JWT token to store
+ * Sets the access token cookie containing JWT
+ * Short-lived token for API authentication (typically 5-15 minutes)
+ * @param {Context} c - Hono Context
+ * @param {string} token - The JWT access token to store
  */
 export const setAccessToken = (c: Context, token: string) => {
    setCookie(c, COOKIE_NAMES.AUTH_SESSION, token,{
@@ -35,11 +40,11 @@ export const setAccessToken = (c: Context, token: string) => {
 }
 
 /**
- * Sets the cookie containing the refresh token.
- * The duration depends on the “remember me” option.
- * @param c - Hono Context
- * @param token - The token to store
- * @param isRememberMe - If true, long duration, otherwise short
+ * Sets the refresh token cookie
+ * Duration varies based on "remember me" option for user convenience
+ * @param {Context} c - Hono Context
+ * @param {string} token - The refresh token to store
+ * @param {boolean} isRememberMe - If true, extends cookie lifetime significantly
  */
 export const setRefreshToken = (c: Context, token: string, isRememberMe: boolean ) => {
    const maxAge = isRememberMe ? 
@@ -53,12 +58,11 @@ export const setRefreshToken = (c: Context, token: string, isRememberMe: boolean
 }
 
 /**
- * Defines the cookie containing the application session ID.
- * Used to identify the server-side session (e.g. in Redis).
- * Duration depends on the “remember me” option.
- * @param c - Hono Context
- * @param token - The token to store
- * @param isRememberMe - If true, long duration, otherwise short
+ * Sets the session ID cookie for Redis session lookup
+ * Links client requests to server-side session data
+ * @param {Context} c - Hono Context
+ * @param {string} token - The session identifier UUID
+ * @param {boolean} isRememberMe - If true, matches refresh token duration
  */
 export const setAppSessionId = (c: Context, token: string, isRememberMe:boolean ) => {
    const maxAge = isRememberMe ? 
@@ -72,8 +76,9 @@ export const setAppSessionId = (c: Context, token: string, isRememberMe:boolean 
 }
 
 /**
- * Clear all auth cookie
- * @param c - Hono Context
+ * Clears all authentication cookies
+ * Used during logout or when authentication fails
+ * @param {Context} c - Hono Context
  */
 export const clearAuthCookies = (c: Context) => {
   deleteCookie(c, COOKIE_NAMES.AUTH_SESSION)
