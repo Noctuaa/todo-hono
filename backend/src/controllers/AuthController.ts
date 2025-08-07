@@ -2,7 +2,8 @@ import type { Context } from 'hono'
 import { User } from '../models/User.js';
 import argon2 from 'argon2';
 import { decode, sign, verify} from 'hono/jwt';
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
+import { COOKIE_NAMES, setAccessToken, setRefreshToken, setAppSessionId, clearAuthCookies} from '../services/cookieService.js';
+ import { getCookie, deleteCookie } from 'hono/cookie';
 import { type RegisterPayload, type LoginPayload } from '../validations/authValidation.js';
 import {Redis} from 'ioredis';
 import crypto from 'crypto';
@@ -13,7 +14,7 @@ const redis = new Redis({
    password: ''
 })
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development-only';
 
 /**
  * AuthController - handles user authentication operations
@@ -65,6 +66,8 @@ export class AuthController {
 
          const errorStatus = c.json({ message: 'Email ou mot de passe incorrect' }, 401); // Unauthorized
 
+         const rememberMe = payload.rememberMe;
+
          const user = await User.query().where('email', payload.email).first();
          if (!user) { return errorStatus;}
 
@@ -77,34 +80,21 @@ export class AuthController {
          const refreshToken = crypto.randomBytes(32).toString('hex')
          const csrfToken = crypto.randomBytes(16).toString('hex')
 
-         setCookie(c, 'accessToken', accessTokens,{
-            httpOnly:true,
-            secure: true,
-            sameSite: 'Strict',
-            maxAge: 15 * 60
-         })
+         // Generate Cookie 
+         setAccessToken(c, accessTokens);
+         setRefreshToken(c,refreshToken, rememberMe);
+         setAppSessionId(c, sessionId, rememberMe);
 
-         setCookie(c, 'refreshToken', refreshToken,{
-            httpOnly:true,
-            secure: true,
-            sameSite: 'Strict',
-            maxAge: 30 * 24 * 60 * 60
-         })
-
-         setCookie(c, 'sessionId', sessionId, {
-            httpOnly:true,
-            secure: true,
-            sameSite: 'strict'
-         })
-
+         // SessionData store in Redis
          const sessionData = {
             userId: user.id,
             username: user.username,
             email: user.email,
             refreshToken,
             csrfToken,
+            rememberMe: rememberMe,
             loginTime: new Date().toISOString(),
-            lastActivity: new Date().toISOString,
+            lastActivity: new Date().toISOString(),
             device: c.req.header('user-agent'),
          }
 
@@ -117,6 +107,7 @@ export class AuthController {
                username: user.username,
                email: user.email,
             },
+            rememberMe: rememberMe,
             isAuthenticated: true,
             csrfToken: csrfToken
          }, 200);
@@ -134,14 +125,14 @@ export class AuthController {
    };
 
    static async logout(c: Context) {
-      const sessionId = getCookie(c, 'sessionId')
+
+      const sessionId = getCookie(c, COOKIE_NAMES.APP_ID)
+
       if(sessionId) {
          await redis.del(`session:${sessionId}`);
       }
 
-      deleteCookie(c, 'sessionId')
-      deleteCookie(c, 'accessToken')
-      deleteCookie(c, 'refreshToken')
+      clearAuthCookies(c);
 
       return c.json({
          success: true,
