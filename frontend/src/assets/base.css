@@ -59,8 +59,31 @@ h1{
 }
 
 /* === FORM STYLES === */
-.form-group {
+.form-group, .form-check {
 	margin-bottom: var(--spacing-5);
+}
+
+.form-check{
+  padding-left: var(--spacing-2);
+  line-height: 1.1;
+  display: grid;
+  grid-template-columns: var(--spacing-3) auto;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.form-check-input{
+  appearance: none;
+  border: 1px solid var(--border-color);
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: var(--radius-md);
+}
+
+.form-check-input:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+  background-color: var(--bg-input-check);
+  border: 1px solid var(--bg-input-check);
 }
 
 .form-input {

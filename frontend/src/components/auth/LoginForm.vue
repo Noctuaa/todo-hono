@@ -24,6 +24,10 @@
 		<div class="form-group">
 			<input type="password" v-model="password" name="password" id="password" class="form-input" placeholder="Mot de passe" autocomplete="current-password" required>
 		</div>
+		<div class="form-check">
+			<input class="form-check-input" type="checkbox" name="rememberMe" id="rememberMe">
+			<label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
+		</div>
 		<div class="error-message">
 
 		</div>
