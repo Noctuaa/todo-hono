@@ -6,6 +6,7 @@
 */
 
 import { Hono } from 'hono';
+import { cors } from 'hono/cors' 
 import { logger } from 'hono/logger';
 import { zValidator } from '@hono/zod-validator'
 
@@ -29,6 +30,10 @@ const authRouter = new Hono()
 
 
 const app = new Hono() // Main application instance
+   .use('/*', cors({
+      origin: 'http://localhost:5173',
+      credentials: true
+   }))
    .use('*', logger()) // Log all requests
    .route('/auth', authRouter)
 
