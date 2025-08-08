@@ -13,8 +13,7 @@ export const useAuthStore = defineStore("auth", () => {
 
 
    /*===Getters===*/
-   const isAuthenticated = computed(() => !!this.token);
-   const userName = computed(() => this.user?.fullName);
+   const isAuthenticated = computed(() => !!user.value);
 
    /*===Actions===*/
 
@@ -28,11 +27,12 @@ export const useAuthStore = defineStore("auth", () => {
    const login = async (credentials) => {
       isLoading.value = true;
       error.value = null;
-
       try {
+         
          const response = await fetch("http://localhost:3333/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json"},
+            credentials: "include",
             body: JSON.stringify(credentials),
          });  
 
@@ -43,8 +43,7 @@ export const useAuthStore = defineStore("auth", () => {
          }
 
          const data = await response.json();
-         user.value = data.data.user;
-         token.value = data.data.token;
+         user.value = data.data;
       } catch (err) {
          console.error(err);
       } finally {
@@ -59,5 +58,5 @@ export const useAuthStore = defineStore("auth", () => {
       error.value = null
   }
 
-   return { user, token, isLoading, error, login, $reset};
+   return { user, token, isLoading, error, isAuthenticated, login, $reset};
 })
