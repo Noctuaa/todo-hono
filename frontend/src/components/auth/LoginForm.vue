@@ -5,14 +5,13 @@
 
 	const email = ref('');
 	const password = ref('');
+	const rememberMe = ref(false);
 
 	const authStore = useAuthStore();
 
-
-
 	const handleSubmit = async() => {
-		await authStore.login({ email: email.value, password: password.value});
-		router.push({name: 'todos'});
+		await authStore.login({ email: email.value, password: password.value, rememberMe: rememberMe.value});
+		if (authStore.isAuthenticated) { router.push({ name: 'todos' })}
 	}
 </script>
 
@@ -25,7 +24,7 @@
 			<input type="password" v-model="password" name="password" id="password" class="form-input" placeholder="Mot de passe" autocomplete="current-password" required>
 		</div>
 		<div class="form-check">
-			<input class="form-check-input" type="checkbox" name="rememberMe" id="rememberMe">
+			<input class="form-check-input" v-model="rememberMe" type="checkbox" name="rememberMe" id="rememberMe">
 			<label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
 		</div>
 		<div class="error-message">
