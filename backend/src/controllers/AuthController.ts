@@ -165,7 +165,8 @@ export class AuthController {
       const user = c.get('user')
 
       return c.json({
-         authenticated: true,
+         connected: true,
+         username: user.username,
          csrfToken: user.csrfToken
       })
    }
