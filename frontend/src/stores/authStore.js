@@ -73,11 +73,48 @@ export const useAuthStore = defineStore("auth", () => {
       }
    }
 
+   /**
+    * Register a new user account
+    * @param {Object} credentials - User credentials
+    * @param {string} credentials.email - User email
+    * @param {string} credentials.username - Username
+    * @param {string} credentials.password - User password
+    * @throws {Error} Throw error if registration fails
+    */
+   const register = async (credentials) => {
+      isLoading.value = true;
+      error.value = null;
+
+      try {
+         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json"},
+            credentials: "include",
+            body: JSON.stringify(credentials)
+         })
+
+         const data = await response.json();
+
+         if(!response.ok){
+            console.log(data)
+            return false;
+         }
+
+         console.log('Registration successful:', data)
+         user.value = null
+         return true;
+      } catch (error) {
+         console.error('Registration error:', error)
+      }finally{
+         isLoading.value = false;
+      }
+   }
+
    const $reset = () => {
       user.value = null
       isLoading.value = false
       error.value = null
   }
 
-   return { user, isLoading, error, isAuthenticated, checkAuthStatus, login, $reset};
+   return { user, isLoading, error, isAuthenticated, checkAuthStatus, login, register, $reset};
 })
