@@ -7,15 +7,36 @@ import { defineStore } from "pinia";
 export const useAuthStore = defineStore("auth", () => {
    /*===State===*/
    const user = ref(null);
-   const token = ref(null);  
    const isLoading = ref(false);
    const error = ref(null);
 
 
    /*===Getters===*/
-   const isAuthenticated = computed(() => !!user.value);
-
+   const isAuthenticated = computed(() => !!user.value?.connected === true);
    /*===Actions===*/
+
+   /**
+   * Checks authentication status with the server
+   * @returns {boolean} True if authenticated, false otherwise
+   */
+   const checkAuthStatus = async () => {    
+      try {
+         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/status`, {
+            method: "GET",
+            credentials: "include"
+         });
+
+         if (response.ok) {
+            const data = await response.json();
+              user.value = data.user
+            return true;
+         }
+      } catch (error) {
+         console.error('Auth status check failed:', error);
+         user.value = null;
+         return false;
+      }
+   }
 
    /**
    * Logs in a user with email and password
@@ -28,8 +49,7 @@ export const useAuthStore = defineStore("auth", () => {
       isLoading.value = true;
       error.value = null;
       try {
-         
-         const response = await fetch("http://localhost:3333/auth/login", {
+         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json"},
             credentials: "include",
@@ -43,7 +63,9 @@ export const useAuthStore = defineStore("auth", () => {
          }
 
          const data = await response.json();
-         user.value = data.data;
+
+         console.log(data);
+         user.value = data.user
       } catch (err) {
          console.error(err);
       } finally {
@@ -53,10 +75,9 @@ export const useAuthStore = defineStore("auth", () => {
 
    const $reset = () => {
       user.value = null
-      token.value = null
       isLoading.value = false
       error.value = null
   }
 
-   return { user, token, isLoading, error, isAuthenticated, login, $reset};
+   return { user, isLoading, error, isAuthenticated, checkAuthStatus, login, $reset};
 })

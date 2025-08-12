@@ -112,14 +112,12 @@ export class AuthController {
 
          return c.json({
             message: 'User logged in successfully',
-            data: {
+            user: {
                id: user.id,
                username: user.username,
-               email: user.email,
-            },
-            rememberMe: rememberMe,
-            isAuthenticated: true,
-            csrfToken: csrfToken
+               connected: true,
+               csrfToken: csrfToken
+            }
          }, 200);
 
 
@@ -165,9 +163,12 @@ export class AuthController {
       const user = c.get('user')
 
       return c.json({
-         connected: true,
-         username: user.username,
-         csrfToken: user.csrfToken
+         user : {
+            id: user.id,
+            username: user.username,
+            connected: true,
+            csrfToken: user.csrfToken
+         }
       })
    }
 }
