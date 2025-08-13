@@ -11,7 +11,7 @@
 
 <template>
    <div class="auth-container a-content-center w-100">
-      <div class="auth-card p-relative w-100" :style="{ height: isLogin ? '468px' : '548px' }">
+      <div class="auth-card p-relative w-100" :style="{ height: isLogin ? '478px' : '590px' }">
          <div class="auth-header">
             <h1 class="auth-title">{{ isLogin ? 'Connexion' : 'Inscription'  }}</h1>
             <p class="auth-subtitle">{{ isLogin ? 'Connectez-vous à votre compte' : 'Créez votre compte'}}</p>

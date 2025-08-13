@@ -59,17 +59,20 @@ h1{
 }
 
 /* === FORM STYLES === */
-.form-group, .form-check {
-	margin-bottom: var(--spacing-5);
+.form-group {
+  position: relative;
+	margin-bottom: var(--spacing-1);
+  min-height: 67px;
 }
 
 .form-check{
   padding-left: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
   line-height: 1.1;
-  display: grid;
-  grid-template-columns: var(--spacing-3) auto;
+  display: flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
+ 
 }
 
 .form-check-input{
@@ -105,8 +108,28 @@ h1{
 	border-color: var(--primary);
 }
 
+.form-input.error {
+   border: 2px solid var(--warning); 
+}
+
+.form-input.valid{
+  border: 2px solid var(--valid); 
+}
+  
+.error-text {
+    height: 20px;
+    color: var(--warning);
+    font-size: 0.8rem;
+    margin: var(--spacing-1) 0;
+    line-height: 1.2;
+    position:absolute;
+    left: 15px;
+}
+
+
 .form-button {
 	padding: var(--spacing-3);
+  margin-top: var(--spacing-2) ;
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: var(--text-secondary);
 	border: none;
@@ -130,3 +153,4 @@ h1{
 	font-size: 1rem;
 	font-weight: 600;
 }
+

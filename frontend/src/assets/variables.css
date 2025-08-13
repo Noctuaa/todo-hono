@@ -2,7 +2,7 @@
   /* === MAIN CLOUR === */
   --primary: #4c62c1;
   --primary-soft: #6e4cc1;
-  --warning: #ff4954;
+  
 
   /* === INTERFACE === */
   --bg-input: #ffffff;
@@ -11,6 +11,8 @@
   --text-primary: #333333;
   --text-secondary: #fff;
   --text-link: #4c62c1;
+  --valid: #22c55e;
+  --warning: #ff4954;
 
     /* === SPACING SYSTÈME === */
   --spacing-1: 0.25rem;   /* 4px */
