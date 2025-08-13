@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const registerSchema = z.object({
    username: z.string()
-   .min(5, 'Doit contenir au moins 5 caractères.')
+   .min(3, 'Doit contenir au moins 3 caractères.')
    .max(255, 'Ne peut pas dépasser 255 caractères.')
    .trim(),
    email: z.email(`Format d'email invalide.`)

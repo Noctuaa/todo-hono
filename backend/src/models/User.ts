@@ -24,7 +24,7 @@ export class User extends Model {
       required: ['username', 'email', 'password'],
       properties: {
          id: { type: 'integer'},
-         username: { type: 'string', minLength: 5, maxLength: 255 },
+         username: { type: 'string', minLength: 3, maxLength: 255 },
          email: { type: 'string', format: 'email', maxLength: 255 },
          active: { type: 'boolean', default: true },
          email_verified: { type: 'boolean', default: false },
