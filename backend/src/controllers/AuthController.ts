@@ -31,7 +31,7 @@ export class AuthController {
 
          const existingUser = await User.query().where('email', payload.email).first();
          if(existingUser) {
-            return c.json({ message: 'User with this email already exists' }, 400);
+            return c.json({ errors: { email: 'Cette email existe déjà' } }, 400);
          }
 
          const hashedPassword = await argon2.hash(payload.password);
@@ -74,7 +74,7 @@ export class AuthController {
          // @ts-ignore - The zValidator middleware manages validation
          const payload: LoginPayload = c.req.valid('json');
 
-         const errorStatus = c.json({ message: 'Email ou mot de passe incorrect' }, 401); // Unauthorized
+         const errorStatus = c.json({ errors: {overall: 'Email ou mot de passe incorrect'}}, 401); // Unauthorized
 
          const rememberMe = payload.rememberMe;
 

@@ -28,11 +28,10 @@ export const useAuthStore = defineStore("auth", () => {
 
          if (response.ok) {
             const data = await response.json();
-              user.value = data.user
+            user.value = data.user
             return true;
          }
       } catch (error) {
-         console.error('Auth status check failed:', error);
          user.value = null;
          return false;
       }
@@ -56,16 +55,16 @@ export const useAuthStore = defineStore("auth", () => {
             body: JSON.stringify(credentials),
          });  
 
-         if(!response.ok) {
-            error.value = "Email ou mot de passe incorrect";
-            const errorData = await response.json();
-            throw new Error(errorData.message);
-         }
-
          const data = await response.json();
 
-         console.log(data);
+         if(!response.ok) {
+            error.value = data.errors
+            return false
+         }
+
          user.value = data.user
+         return true
+
       } catch (err) {
          console.error(err);
       } finally {
@@ -96,8 +95,8 @@ export const useAuthStore = defineStore("auth", () => {
          const data = await response.json();
 
          if(!response.ok){
-            console.log(data)
-            return false;
+            error.value = data.errors
+            return false
          }
 
          console.log('Registration successful:', data)
@@ -105,7 +104,8 @@ export const useAuthStore = defineStore("auth", () => {
          return true;
       } catch (error) {
          console.error('Registration error:', error)
-      }finally{
+         return false
+      } finally {
          isLoading.value = false;
       }
    }
