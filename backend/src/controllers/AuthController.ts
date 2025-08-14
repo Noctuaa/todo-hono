@@ -31,7 +31,7 @@ export class AuthController {
 
          const existingUser = await User.query().where('email', payload.email).first();
          if(existingUser) {
-            return c.json({ errors: { email: 'Cette email existe déjà' } }, 400);
+            return c.json({ errors: {email: 'Cette email existe déjà'} }, 400);
          }
 
          const hashedPassword = await argon2.hash(payload.password);
